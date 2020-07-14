@@ -28,11 +28,11 @@ class ProtonVersion:
 
 
 class Updater:
-    def __init__(self):
-        self.steam_compat_dir = os.path.expanduser("~/.steam/steam/compatibilitytools.d")
+    def __init__(self, tmpdir, steam_compat_dir):
+        self.steam_compat_dir = steam_compat_dir
         self.installed_versions = []
         self.available_version = None
-        self.tmpdir = "/tmp"
+        self.tmpdir = tmpdir
         self.get_latest()
         self.get_local_versions()
 
@@ -99,16 +99,12 @@ class Updater:
             print(f"Failed to unpack {tmp_file}, exception: {exc}")
             shutil.rmtree(os.path.join(self.steam_compat_dir, self.available_version.name))
             os.remove(tmp_file)
-            return
 
         print(f"\nDone, updated proton version to {self.available_version.name}")
 
 
 def main(args):
-    updater = Updater()
-    if args.steamdir:
-        updater.steam_compat_dir = args.steamdir
-
+    updater = Updater(args.tmpdir, args.steamdir)
     updater.do_update()
     if args.cleanup:
         updater.cleanup_old_versions()
@@ -129,6 +125,7 @@ if __name__ == "__main__":
                         help="Cleanup old proton versions")
 
     parser.add_argument("--steamdir",
+                        default=os.path.expanduser("~/.steam/steam/compatibilitytools.d"),
                         required=False,
                         help="Path to steam directory")
 
