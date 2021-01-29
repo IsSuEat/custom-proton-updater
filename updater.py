@@ -63,7 +63,7 @@ class Updater:
                 sys.stdout.write(f"\rDownloading, please wait. {next(spinner)}")
                 sys.stdout.flush()
                 fp.write(chunk)
-
+        print("\n")
         return path
 
     def unpack_update(self, path):
@@ -104,6 +104,10 @@ class Updater:
 
 
 def main(args):
+    if not os.path.isdir(args.steamdir):
+        print(f"Steam compatibility tools not found at {args.steamdir}, creating it")
+        os.mkdir(args.steamdir)
+        
     updater = Updater(args.tmpdir, args.steamdir)
     updater.do_update()
     if args.cleanup:
