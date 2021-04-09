@@ -39,12 +39,25 @@ class Updater:
     def get_local_versions(self):
         installed_versions = os.listdir(self.steam_compat_dir)
         if installed_versions:
-            self.installed_versions = list(map(lambda x: ProtonVersion(x, ""), installed_versions))
+            installed_proton_versions = filter(
+                lambda x: x.startswith("Proton"), installed_versions
+            )
+            self.installed_versions.append(
+                map(lambda x: ProtonVersion(x, ""), installed_proton_versions)
+            )
 
     def get_latest(self):
         r = requests.get(BASE_URL + GE_PROTON_REPO)
         latest = r.json()
-        self.available_version = ProtonVersion(latest["name"], latest.get("assets")[0].get("browser_download_url"))
+        for asset in latest.get("assets"):
+            name = asset.get("name")
+            if "tar.gz" in name:
+                url = asset.get("browser_download_url")
+
+        if not url:
+            raise Exception("Failed to find tarball url")
+
+        self.available_version = ProtonVersion(name.strip(".tar.gz"), url)
 
     def check_update_available(self) -> bool:
         for v in self.installed_versions:
@@ -67,7 +80,6 @@ class Updater:
         return path
 
     def unpack_update(self, path):
-        print("Unpacking update")
         with tarfile.open(path) as tarball:
             tarball.extractall(path=self.steam_compat_dir)
 
@@ -85,6 +97,7 @@ class Updater:
         if not self.check_update_available():
             print("No new versions available")
             return
+
         print(f"Available: {self.available_version.name}")
         yes_no = input("Perform update? [y/n]\t")
         if yes_no.lower() != "y":
@@ -97,7 +110,9 @@ class Updater:
             self.unpack_update(tmp_file)
         except tarfile.ExtractError as exc:
             print(f"Failed to unpack {tmp_file}, exception: {exc}")
-            shutil.rmtree(os.path.join(self.steam_compat_dir, self.available_version.name))
+            shutil.rmtree(
+                os.path.join(self.steam_compat_dir, self.available_version.name)
+            )
             os.remove(tmp_file)
 
         print(f"\nDone, updated proton version to {self.available_version.name}")
@@ -107,7 +122,7 @@ def main(args):
     if not os.path.isdir(args.steamdir):
         print(f"Steam compatibility tools not found at {args.steamdir}, creating it")
         os.mkdir(args.steamdir)
-        
+
     updater = Updater(args.tmpdir, args.steamdir)
     updater.do_update()
     if args.cleanup:
@@ -116,22 +131,29 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Updater for GloriousEggroll's custom Proton versions.")
-    parser.add_argument("--tmpdir",
-                        default="/tmp",
-                        required=False,
-                        help="Temporary directory for downloads, defaults to /tmp")
+        description="Updater for GloriousEggroll's custom Proton versions."
+    )
+    parser.add_argument(
+        "--tmpdir",
+        default="/tmp",
+        required=False,
+        help="Temporary directory for downloads, defaults to /tmp",
+    )
 
-    parser.add_argument("--cleanup",
-                        default=False,
-                        required=False,
-                        action="store_true",
-                        help="Cleanup old proton versions")
+    parser.add_argument(
+        "--cleanup",
+        default=False,
+        required=False,
+        action="store_true",
+        help="Cleanup old proton versions",
+    )
 
-    parser.add_argument("--steamdir",
-                        default=os.path.expanduser("~/.steam/steam/compatibilitytools.d"),
-                        required=False,
-                        help="Path to steam directory")
+    parser.add_argument(
+        "--steamdir",
+        default=os.path.expanduser("~/.steam/steam/compatibilitytools.d"),
+        required=False,
+        help="Path to steam directory",
+    )
 
     args = parser.parse_args()
     main(args)
