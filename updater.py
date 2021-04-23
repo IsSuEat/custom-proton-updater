@@ -42,7 +42,7 @@ class Updater:
             installed_proton_versions = filter(
                 lambda x: x.startswith("Proton"), installed_versions
             )
-            self.installed_versions.append(
+            self.installed_versions = list(
                 map(lambda x: ProtonVersion(x, ""), installed_proton_versions)
             )
 
