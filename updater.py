@@ -72,12 +72,22 @@ class Updater:
         path = f"{tmpdir}/{version.name}"
 
         r = requests.get(version.url, stream=True)
-        spinner = itertools.cycle(["|", "/", "-", "\\"])
+        file_size = int(r.headers.get("Content-length", -1))
+
+        if file_size == -1:
+            raise Exception("Could not get conent size")
+
+        print(f"Downloading {file_size / (1024*1024):.2f} mb")
+        total_downloaded = 0
         with open(path, "wb") as fp:
-            for chunk in r.iter_content(chunk_size=128):
-                sys.stdout.write(f"\rDownloading, please wait. {next(spinner)}")
-                sys.stdout.flush()
+            for chunk in r.iter_content(chunk_size=4096):
+                total_downloaded += len(chunk)
+
                 fp.write(chunk)
+                done = int(50 * total_downloaded / file_size)
+                sys.stdout.write(f"\r[{'=' * done}{' ' * (50 - done)}]")
+                sys.stdout.flush()
+
         print("\n")
         return path
 
@@ -100,9 +110,9 @@ class Updater:
             print("No new versions available")
             return
 
-        print(f"Available: {self.available_version.name}")
-        yes_no = input("Perform update? [y/n]\t")
-        if yes_no.lower() != "y":
+        print(f"Available: {self.available_version.name}\n")
+        yes_no = input("Perform update? [Y/n]: ")
+        if yes_no.lower() not in ["y", ""]:
             return
 
         tmp_file = self.fetch_update(self.available_version, self.tmpdir)
@@ -158,4 +168,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    main(args)
+    try:
+        main(args)
+    except KeyboardInterrupt:
+        print("Aborted")
