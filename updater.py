@@ -2,7 +2,6 @@
 
 import os
 import tarfile
-import itertools
 import sys
 import shutil
 import argparse
@@ -17,16 +16,6 @@ class ProtonVersion:
         self.name = name
         self.url = url
         self.local = self.url != ""
-        self.version, self.tags = self.split_version()
-
-    def split_version(self):
-        parts = self.name.lstrip("Proton-").split("-")
-        version = list(map(int, parts[0].split(".")))
-        tags = parts[1::]
-        return version, tags
-
-    def __lt__(self, other):
-        return self.version < other.version
 
 
 class Updater:
@@ -39,10 +28,10 @@ class Updater:
         self.get_local_versions()
 
     def get_local_versions(self):
-        installed_versions = os.listdir(self.steam_compat_dir)
-        if installed_versions:
+        installed_compat_tools = os.listdir(self.steam_compat_dir)
+        if installed_compat_tools:
             installed_proton_versions = filter(
-                lambda x: x.startswith("Proton"), installed_versions
+                lambda x: x.startswith("Proton"), installed_compat_tools
             )
             self.installed_versions = list(
                 map(lambda x: ProtonVersion(x, ""), installed_proton_versions)
