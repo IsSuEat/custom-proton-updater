@@ -15,7 +15,6 @@ class ProtonVersion:
     def __init__(self, name, url):
         self.name = name
         self.url = url
-        self.local = self.url != ""
 
 
 class Updater:
@@ -31,7 +30,7 @@ class Updater:
         installed_compat_tools = os.listdir(self.steam_compat_dir)
         if installed_compat_tools:
             installed_proton_versions = filter(
-                lambda x: x.startswith("Proton"), installed_compat_tools
+                lambda x: "proton" in x.lower(), installed_compat_tools
             )
             self.installed_versions = list(
                 map(lambda x: ProtonVersion(x, ""), installed_proton_versions)
